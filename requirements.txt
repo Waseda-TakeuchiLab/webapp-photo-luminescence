@@ -1,0 +1,11 @@
+dash
+dash_bootstrap_components
+plotly
+pandas
+opencv-python
+git+https://github.com/Waseda-TakeuchiLab/tlab-analysis@v0.0.1
+
+# For test
+mypy
+coverage
+flake8
