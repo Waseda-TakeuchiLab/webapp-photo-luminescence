@@ -71,7 +71,7 @@ def update_graph_and_table(
 ) -> tuple[go.Figure, dict[str, t.Any]]:
     if not uploaded_files or not selected_items:
         return go.Figure(), dict()
-    trs: list[pl.TimeResolved] = []
+    trs: list[pl.TimeResolved[pl.Data]] = []
     for item in filter(uploaded_files.__contains__, selected_items):
         data = uploadbar.load_pldata(uploaded_files[item], filter_type)
         tr = data.time_resolved()
