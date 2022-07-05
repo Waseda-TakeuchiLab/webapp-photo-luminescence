@@ -86,7 +86,8 @@ def update_graph_and_table(
         y="intensity",
         color="name",
         custom_data=["FWHM"],
-        animation_frame="time"
+        animation_frame="time",
+        color_discrete_sequence=px.colors.qualitative.Set1,
     )
     if show_peak_vline:
         for tr in trs:
