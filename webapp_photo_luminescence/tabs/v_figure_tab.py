@@ -108,6 +108,7 @@ def update_graph_and_table(
         x="time",
         y="intensity",
         color="name",
+        color_discrete_sequence=px.colors.qualitative.Set1,
     )
     fig.add_traces(traces)
     fig.update_traces(
