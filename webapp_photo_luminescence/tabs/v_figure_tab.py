@@ -88,7 +88,7 @@ def update_graph_and_table(
         wrs.append(wr)
     if fitting:
         for wr in wrs:
-            params, cov = wr.fit(double_exponential)
+            params, cov = wr.fit(double_exponential, bounds=(0.0, np.inf))
             fast, slow = sorted((params[:2], params[2:]), key=lambda x: x[1])  # type: ignore
             a = int(fast[0] / (fast[0] + slow[0]) * 100)
             traces.append(
