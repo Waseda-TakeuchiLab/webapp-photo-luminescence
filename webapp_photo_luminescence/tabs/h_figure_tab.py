@@ -1,4 +1,6 @@
 # Copyright (c) 2022 Shuhei Nitta. All rights reserved.
+import functools
+import os
 import typing as t
 
 import dash
@@ -9,33 +11,31 @@ import plotly.graph_objects as go
 import pandas as pd
 from tlab_analysis import photo_luminescence as pl
 
-from webapp_photo_luminescence import (
-    uploadbar,
-    sidebar,
+from webapp_photo_luminescence.tabs import (
+    common,
+    upload
 )
-from webapp_photo_luminescence.tabs import common
 
 
 graph = common.create_graph(id="h-figure-graph")
 peak_vline_switch = dbc.Switch(
     id="h-peak-vline-switch",
     label="Vertical Line at Peak",
-    value=True,
-    className="mt-2",
+    value=False,
 )
 FWHM_range_switch = dbc.Switch(
     id="h-FWHM-range-switch",
     label="FWHM Range",
-    value=True,
+    value=False,
     className="",
 )
-csv_download = dcc.Download(
+download = dcc.Download(
     id="h-csv-download"
 )
-csv_download_button = dbc.Button(
+download_button = dbc.Button(
     [
         "Download CSV",
-        csv_download
+        download
     ],
     id="h-csv-download-button"
 )
@@ -45,70 +45,90 @@ options = common.create_options_layout(
         FWHM_range_switch
     ],
     download_components=[
-        csv_download_button
+        download_button
     ]
 )
 table = common.create_table(id="h-table")
 layout = common.create_layout(graph, options, table)
 
 
+@functools.lru_cache(maxsize=8)
+def load_time_resolved(
+    filepath: str,
+    filter_type: str | None,
+) -> pl.TimeResolved[pl.Data]:
+    data = upload.load_pldata(filepath, filter_type)
+    tr = data.time_resolved()
+    tr.df["name"] = os.path.split(filepath)[-1]
+    return tr
+
+
 @dash.callback(
     dash.Output(graph, "figure"),
-    dash.Output(table, "data"),
-    dash.Input(uploadbar.uploaded_files_dropdown, "value"),
-    dash.State(uploadbar.uploaded_files_store, "data"),
-    dash.Input(sidebar.filter_radio_items, "value"),
+    dash.Input(upload.files_dropdown, "value"),
+    dash.State(upload.upload_dir_store, "data"),
+    dash.Input(upload.filter_radio_items, "value"),
     dash.Input(peak_vline_switch, "value"),
     dash.Input(FWHM_range_switch, "value"),
     prevent_initial_call=True
 )
-def update_graph_and_table(
+def update_graph(
     selected_items: list[str] | None,
-    uploaded_files: dict[str, str] | None,
+    upload_dir: str | None,
     filter_type: str | None,
     show_peak_vline: bool,
     show_FWHM_range: bool,
-) -> tuple[go.Figure, dict[str, t.Any]]:
-    if not uploaded_files or not selected_items:
-        return go.Figure(), dict()
-    trs: list[pl.TimeResolved[pl.Data]] = []
-    for item in filter(uploaded_files.__contains__, selected_items):
-        data = uploadbar.load_pldata(uploaded_files[item], filter_type)
-        tr = data.time_resolved()
-        tr.df["time"] = f"{tr.range[0]:.2f}"
-        tr.df["FWHM"] = tr.FWHM
-        tr.df["name"] = item
-        trs.append(tr)
+) -> go.Figure:
+    assert upload_dir is not None
+    assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
+    if not selected_items:
+        return go.Figure()
+    filepaths = [os.path.join(upload_dir, item) for item in selected_items]
+    trs = [
+        load_time_resolved(
+            filepath,
+            filter_type
+        ) for filepath in filepaths if os.path.exists(filepath)
+    ]
     df = pd.concat([tr.df for tr in trs])
     fig = px.line(
         df,
         x="wavelength",
         y="intensity",
         color="name",
-        custom_data=["FWHM"],
-        animation_frame="time",
         color_discrete_sequence=px.colors.qualitative.Set1,
     )
     if show_peak_vline:
         for tr in trs:
-            fig.add_vline(tr.peak_wavelength)
+            fig.add_vline(
+                tr.peak_wavelength,
+                annotation=dict(
+                    text=f"Wavelength: {tr.peak_wavelength:.2f} nm",
+                    hovertext=f"Intensity: {tr.peak_intensity:.0f}"
+                )
+            )
     if show_FWHM_range:
         for i, tr in enumerate(trs):
             fig.add_vrect(
                 *tr.half_range,
-                fillcolor=px.colors.qualitative.Plotly[i],
-                opacity=0.10
+                fillcolor=px.colors.qualitative.Set1[i],
+                opacity=0.10,
+                annotation=dict(
+                    text=f"FWHM: {tr.FWHM:.0f} nm",
+                    hovertext=""
+                    f"Left: {tr.half_range[0]:.2f} nm<br>"
+                    f"Right: {tr.half_range[1]:.2f} nm"
+                )
             )
     fig.update_traces(
         hovertemplate=""
         "Wavelength: %{x:.2f} nm<br>"
-        "Intensity: %{y:d}<br>"
-        "FWHM: %{customdata[0]:.2f} nm"
+        "Intensity: %{y:.0f}<br>"
         "<extra></extra>"
     )
     fig.update_layout(
         legend=dict(
-            font=dict(size=12),
+            font=dict(size=14),
             yanchor="top",
             y=-0.1,
             xanchor="left",
@@ -122,31 +142,79 @@ def update_graph_and_table(
         title_text="<b>Intensity (arb. units)</b>",
         range=(0, df["intensity"].max() * 1.05)
     )
-    return fig, df.to_dict("records")
+    return fig
 
 
 @dash.callback(
-    dash.Output(csv_download_button, "disabled"),
-    dash.Input(uploadbar.uploaded_files_dropdown, "value")
+    dash.Output(table, "data"),
+    dash.Input(upload.files_dropdown, "value"),
+    dash.State(upload.upload_dir_store, "data"),
+    dash.Input(upload.filter_radio_items, "value"),
+    prevent_initial_call=True
+)
+def update_table(
+    selected_items: list[str] | None,
+    upload_dir: str | None,
+    filter_type: str | None,
+) -> dict[str, t.Any] | None:
+    assert upload_dir is not None
+    assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
+    if not selected_items:
+        return None
+    filepaths = [os.path.join(upload_dir, item) for item in selected_items]
+    trs = [
+        load_time_resolved(
+            filepath,
+            filter_type
+        ) for filepath in filepaths if os.path.exists(filepath)
+    ]
+    df = pd.concat([tr.df for tr in trs])
+    return dict(df.to_dict("records"))
+
+
+@dash.callback(
+    dash.Output(download_button, "disabled"),
+    dash.Input(upload.files_dropdown, "value")
 )
 def update_download_button_ability(selected_items: list[str] | None) -> bool:
-    return not bool(selected_items)
+    if selected_items is None:
+        return True
+    return bool(len(selected_items) != 1)
 
 
 @dash.callback(
-    dash.Output(csv_download, "data"),
-    dash.Input(csv_download_button, "n_clicks"),
-    dash.State(table, "data")
+    dash.Output(download, "data"),
+    dash.Input(download_button, "n_clicks"),
+    dash.State(upload.files_dropdown, "value"),
+    dash.State(upload.upload_dir_store, "data"),
+    dash.State(upload.filter_radio_items, "value"),
+    prevent_initial_call=True
 )
 def download_csv(
     n_clicks: int,
-    data: dict[str, t.Any] | None
+    selected_items: list[str] | None,
+    upload_dir: str | None,
+    filter_type: str | None,
 ) -> dict[str, t.Any]:
-    if not data:
+    assert upload_dir is not None
+    assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
+    if not selected_items:
         raise dash.exceptions.PreventUpdate
+    item = selected_items[0]
+    filepath = os.path.join(upload_dir, item)
+    if not os.path.exists(filepath):
+        raise dash.exceptions.PreventUpdate
+    tr = load_time_resolved(
+        filepath,
+        filter_type,
+    )
+    filename = "h-" \
+        + (filter_type+"-" if filter_type else "") \
+        + item \
+        + ".csv"
     return dict(
-        filename="h-figure.csv",
+        filename=filename,
+        content=tr.df.to_csv(index=False),
         type="text/csv",
         base64=False,
-        content=pd.DataFrame(data).to_csv(index=False)
     )

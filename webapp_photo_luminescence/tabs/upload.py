@@ -1,8 +1,9 @@
 # Copyright (c) 2022 Shuhei Nitta. All rights reserved.
 import base64
-import pathlib
-import functools
 import dataclasses
+import functools
+import os
+import pathlib
 import tempfile
 
 import dash
@@ -13,17 +14,24 @@ import cv2
 from tlab_analysis import photo_luminescence as pl
 
 
-UPLOAD_DIR = pathlib.Path("/tmp/upload")
-UPLOAD_DIR.mkdir(exist_ok=True)
+UPLOAD_BASEDIR = "/tmp/app"
 
-
+filter_radio_items = dbc.RadioItems(
+    id="filter-radio-items",
+    options=[
+        {"label": "None", "value": None},
+        {"label": "Mean", "value": "mean"},
+        {"label": "Gaussian", "value": "gaussian"}
+    ],
+    value=None
+)
 upload_button = dbc.Button(
     "Upload Files",
     id="upload-button",
     color="primary",
     className="my-2"
 )
-uploaded_files_dropdown = dcc.Dropdown(
+files_dropdown = dcc.Dropdown(
     options=[],
     value=None,
     multi=True,
@@ -38,85 +46,93 @@ file_uploader = dcc.Upload(
     multiple=True,
     className=""
 )
-uploaded_files_store = dcc.Store(
-    "uploaded-files-store",
-    storage_type="memory",
-    data=dict()
+upload_dir_store = dcc.Store(
+    "upload-dir-store",
+    storage_type="session",
+    data=""
 )
-layout = dbc.Row(
-    [
-        dbc.Col(uploaded_files_dropdown),
-        dbc.Col(file_uploader, width="auto"),
-        uploaded_files_store
-    ],
-    className="frex-nowrap ms-auto",
-    style={"width": "100%"}
+last_uploaded_store = dcc.Store(
+    "last-upload-store",
+    storage_type="memory",
+    data=list()
 )
 
 
 @dash.callback(
-    dash.Output(uploaded_files_store, "data"),
+    dash.Output(upload_dir_store, "data"),
+    dash.Input(upload_dir_store, "data")
+)
+def update_upload_dir(_: dict[str, str] | None) -> str:
+    if upload_dir_store:
+        raise dash.exceptions.PreventUpdate
+    if not os.path.exists(UPLOAD_BASEDIR):
+        os.mkdir(UPLOAD_BASEDIR)
+    tempdir = tempfile.mkdtemp(dir=UPLOAD_BASEDIR)
+    return tempdir
+
+
+@dash.callback(
+    dash.Output(last_uploaded_store, "data"),
     dash.Input(file_uploader, "contents"),
     dash.State(file_uploader, "filename"),
-    dash.State(uploaded_files_store, "data"),
+    dash.State(upload_dir_store, "data"),
     prevent_initial_call=True
 )
-def update_uploaded_files(
+def on_upload_files(
     contents: list[str] | None,
     filenames: list[str] | None,
-    uploaded_files: dict[str, str] | None
-) -> dict[str, str]:
+    upload_dir: str | None
+) -> list[str]:
+    assert upload_dir is not None
+    assert upload_dir.startswith(UPLOAD_BASEDIR)
     if contents is None or filenames is None:
         raise dash.exceptions.PreventUpdate
-    if not isinstance(uploaded_files, dict):
-        uploaded_files = dict()
     for filename, content in zip(filenames, contents):
-        with tempfile.NamedTemporaryFile("wb", dir=UPLOAD_DIR, delete=False) as f:
+        with open(os.path.join(upload_dir, filename), "wb") as f:
             content_type, content_string = content.split(",")
             f.write(base64.b64decode(content_string))
-            uploaded_files[filename] = f.name
-    return uploaded_files
+    return filenames
 
 
 @dash.callback(
-    dash.Output(uploaded_files_dropdown, "options"),
-    dash.Input(uploaded_files_store, "data"),
+    dash.Output(files_dropdown, "options"),
+    dash.Input(last_uploaded_store, "data"),
+    dash.State(upload_dir_store, "data"),
     prevent_initial_call=True,
 )
 def update_dropdown_options(
-    uploaded_files: dict[str, str] | None
+    last_uploaded_files: list[str] | None,
+    upload_dir: str | None
 ) -> list[str]:
-    if not uploaded_files:
-        raise dash.exceptions.PreventUpdate
-    return list(reversed(uploaded_files.keys()))
+    assert upload_dir is not None
+    assert upload_dir.startswith(UPLOAD_BASEDIR)
+    return [path.name for path in pathlib.Path(upload_dir).iterdir() if path.is_file()]
 
 
 @dash.callback(
-    dash.Output(uploaded_files_dropdown, "value"),
-    dash.Input(uploaded_files_dropdown, "options"),
-    dash.State(file_uploader, "filename"),
-    dash.Input(uploaded_files_dropdown, "value"),
+    dash.Output(files_dropdown, "value"),
+    dash.Input(last_uploaded_store, "data"),
+    dash.State(files_dropdown, "value"),
     prevent_initial_call=True,
 )
 def update_dropdown_value(
-    options: list[str] | None,
-    filename: list[str] | None,
+    filenames: list[str] | None,
     current_value: list[str] | None
 ) -> list[str]:
     if current_value is None:
         current_value = list()
-    if not filename:
+    if not filenames:
         return current_value
     else:
-        return current_value + filename
+        return current_value + filenames
 
 
 @functools.lru_cache(maxsize=8)
 def load_pldata(
-    filename: str,
+    filepath: str,
     filter_type: str | None = None
 ) -> pl.Data:
-    data = pl.Data.from_raw_file(UPLOAD_DIR / filename)
+    data = pl.Data.from_raw_file(filepath)
     data = filter2d(data, filter_type)
     return data
 
