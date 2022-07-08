@@ -1,13 +1,25 @@
 # Copyright (c) 2022 Shuhei Nitta. All rights reserved.
 import dash_bootstrap_components as dbc
 
-from webapp_photo_luminescence.tabs import (
+from . import (
+    upload,
     streak_image_tab,
     h_figure_tab,
     v_figure_tab
 )
 
-layout = dbc.Tabs(
+
+uploadbar = dbc.Row(
+    [
+        dbc.Col(upload.files_dropdown),
+        dbc.Col(upload.file_uploader, width="auto"),
+        upload.upload_dir_store,
+        upload.last_uploaded_store
+    ],
+    className="frex-nowrap ms-auto",
+    style={"width": "100%"}
+)
+tabs = dbc.Tabs(
     [
         dbc.Tab(
             streak_image_tab.layout,
@@ -27,4 +39,19 @@ layout = dbc.Tabs(
     ],
     id="figure-tabs",
     className="nav-fill"
+)
+layout = dbc.Container(
+    [
+        dbc.Row(
+            [
+                dbc.Col(uploadbar)
+            ]
+        ),
+        dbc.Row(
+            [
+                dbc.Col(tabs)
+            ]
+        ),
+    ],
+    fluid=True
 )

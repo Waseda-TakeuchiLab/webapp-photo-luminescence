@@ -1,5 +1,6 @@
 # Copyright (c) 2022 Shuhei Nitta. All rights reserved.
 import base64
+import os
 import typing as t
 
 import dash
@@ -7,11 +8,10 @@ from dash import dcc
 import dash_bootstrap_components as dbc
 import plotly.graph_objects as go
 
-from webapp_photo_luminescence import (
-    uploadbar,
-    sidebar
+from webapp_photo_luminescence.tabs import (
+    common,
+    upload
 )
-from webapp_photo_luminescence.tabs import common
 
 
 graph = common.create_graph(id="streak-image-graph")
@@ -31,26 +31,29 @@ options = common.create_options_layout(
         img_download_button
     ]
 )
-layout = common.create_layout(graph, options, None)
+layout = common.create_layout(graph, options)
 
 
 @dash.callback(
     dash.Output(graph, "figure"),
-    dash.Input(uploadbar.uploaded_files_dropdown, "value"),
-    dash.State(uploadbar.uploaded_files_store, "data"),
-    dash.Input(sidebar.filter_radio_items, "value"),
+    dash.Input(upload.files_dropdown, "value"),
+    dash.State(upload.upload_dir_store, "data"),
+    dash.Input(upload.filter_radio_items, "value"),
     prevent_initial_call=True
 )
 def update_streak_image(
     selected_items: list[str] | None,
-    uploaded_files: dict[str, str] | None,
+    upload_dir: str | None,
     filter_type: str | None,
 ) -> go.Figure:
-    if not uploaded_files or not selected_items:
-        raise dash.exceptions.PreventUpdate
+    assert upload_dir is not None
+    assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
+    if not selected_items:
+        return go.Figure()
+    filepaths = [os.path.join(upload_dir, item) for item in selected_items]
     item_to_data = {
-        item: uploadbar.load_pldata(uploaded_files[item], filter_type)
-        for item in filter(uploaded_files.__contains__, selected_items)
+        os.path.split(filepath)[-1]: upload.load_pldata(filepath, filter_type)
+        for filepath in filepaths if os.path.exists(filepath)
     }
     fig = go.Figure(
         [
@@ -101,7 +104,7 @@ def update_streak_image(
 
 @dash.callback(
     dash.Output(img_download_button, "disabled"),
-    dash.Input(uploadbar.uploaded_files_dropdown, "value")
+    dash.Input(upload.files_dropdown, "value")
 )
 def update_download_button_ability(
     selected_items: list[str] | None
@@ -114,26 +117,26 @@ def update_download_button_ability(
 @dash.callback(
     dash.Output(img_download, "data"),
     dash.Input(img_download_button, "n_clicks"),
-    dash.State(uploadbar.uploaded_files_dropdown, "value"),
-    dash.State(uploadbar.uploaded_files_store, "data"),
-    dash.State(sidebar.filter_radio_items, "value"),
+    dash.State(upload.files_dropdown, "value"),
+    dash.State(upload.upload_dir_store, "data"),
+    dash.State(upload.filter_radio_items, "value"),
     prevent_initial_call=True
 )
 def update_download_content(
     n_clicks: int | None,
     selected_items: list[str] | None,
-    uploaded_files: dict[str, str] | None,
+    upload_dir: str | None,
     filter_type: str | None,
 ) -> dict[str, t.Any]:
-    if not selected_items or not uploaded_files:
+    assert upload_dir is not None
+    assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
+    if not selected_items:
         raise dash.exceptions.PreventUpdate
     item = selected_items[0]
-    if item not in uploaded_files:
+    filepath = os.path.join(upload_dir, item)
+    if not os.path.exists(filepath):
         raise dash.exceptions.PreventUpdate
-    data = uploadbar.load_pldata(
-        uploaded_files[item],
-        filter_type
-    )
+    data = upload.load_pldata(filepath, filter_type)
     return dict(
         filename=(filter_type+"-" if filter_type else "") + item,
         content=base64.b64encode(data.to_raw_binary()).decode(),

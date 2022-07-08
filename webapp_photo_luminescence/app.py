@@ -8,24 +8,21 @@ import dash_bootstrap_components as dbc
 from webapp_photo_luminescence import (
     navbar,
     sidebar,
-    uploadbar,
     tabs
 )
 
 
-main_container = dbc.Container(
-    [
-        dbc.Row(uploadbar.layout),
-        dbc.Row(tabs.layout),
-    ]
-)
 layout = dbc.Container(
     [
-        dbc.Row(navbar.layout),
+        dbc.Row(
+            [
+                navbar.layout
+            ]
+        ),
         dbc.Row(
             [
                 dbc.Col(sidebar.layout, width=2, class_name="bg-light"),
-                dbc.Col(main_container, width=10)
+                dbc.Col(tabs.layout, width=10)
             ],
             style={"height": "100vh"}
         )
