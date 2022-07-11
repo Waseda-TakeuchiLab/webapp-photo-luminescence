@@ -91,15 +91,15 @@ def download_powerpoint(
         excitation_power=5,         # TODO: Retrieve from `item`
         time_range=10,              # TODO: Retrieve from `item`
         center_wavelength=int(tr.peak_wavelength),
-        FWHM=int(tr.FWHM),
+        FWHM=tr.FWHM,
         frame=10000,                # TODO: Retrieve from `item`
         date=datetime.date.fromisoformat(experiment_date) if experiment_date else datetime.date.today(),
         h_fig=go.Figure(h_fig),
         v_fig=go.Figure(v_fig),
         a=int(wr.df.attrs["fit"]["a"]),
         b=int(wr.df.attrs["fit"]["b"]),
-        tau1=float(f"{wr.df.attrs['fit']['tau1']:.2f}"),
-        tau2=float(f"{wr.df.attrs['fit']['tau2']:.2f}")
+        tau1=float(wr.df.attrs['fit']['tau1']),
+        tau2=float(wr.df.attrs['fit']['tau2'])
     )
     with io.BytesIO() as f:
         prs.save(f)
