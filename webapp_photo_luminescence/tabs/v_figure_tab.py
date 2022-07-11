@@ -182,7 +182,7 @@ def update_table(
     filter_type: str | None,
     wavelength_range: list[int],
     fitting: bool,
-) -> dict[str, t.Any] | None:
+) -> list[dict[str, t.Any]] | None:
     assert upload_dir is not None
     assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
     if not selected_items:
@@ -197,7 +197,7 @@ def update_table(
         ) for filepath in filepaths if os.path.exists(filepath)
     ]
     df = pd.concat([wr.df for wr in wrs])
-    return dict(df.to_dict("records"))
+    return df.to_dict("records")  # type: ignore
 
 
 @dash.callback(
