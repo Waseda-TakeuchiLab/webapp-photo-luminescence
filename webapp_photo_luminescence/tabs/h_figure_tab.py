@@ -104,7 +104,7 @@ def update_graph(
                 tr.peak_wavelength,
                 annotation=dict(
                     text=f"Wavelength: {tr.peak_wavelength:.2f} nm",
-                    hovertext=f"Intensity: {tr.peak_intensity:.0f}"
+                    hovertext=f"Intensity: {tr.peak_intensity:.4g}"
                 )
             )
     if show_FWHM_range:
@@ -114,7 +114,7 @@ def update_graph(
                 fillcolor=px.colors.qualitative.Set1[i],
                 opacity=0.10,
                 annotation=dict(
-                    text=f"FWHM: {tr.FWHM:.0f} nm",
+                    text=f"FWHM: {tr.FWHM:.3g} nm",
                     hovertext=""
                     f"Left: {tr.half_range[0]:.2f} nm<br>"
                     f"Right: {tr.half_range[1]:.2f} nm"
@@ -123,7 +123,7 @@ def update_graph(
     fig.update_traces(
         hovertemplate=""
         "Wavelength: %{x:.2f} nm<br>"
-        "Intensity: %{y:.0f}<br>"
+        "Intensity: %{y:.4g}<br>"
         "<extra></extra>"
     )
     fig.update_layout(

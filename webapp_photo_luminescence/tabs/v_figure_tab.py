@@ -131,15 +131,15 @@ def update_graph(
                 line=dict(color="black"),
                 name=f"Double Exponential Approximation "
                 f"a : b = {wr.df.attrs['fit']['a']}:{wr.df.attrs['fit']['b']}, "
-                f"τ₁ = {wr.df.attrs['fit']['tau1']:.2f} ns, "
-                f"τ₂ = {wr.df.attrs['fit']['tau2']:.2f} ns"
+                f"τ₁ = {wr.df.attrs['fit']['tau1']:.3g} ns, "
+                f"τ₂ = {wr.df.attrs['fit']['tau2']:.3g} ns"
             ) for wr in wrs if "fit" in wr.df.attrs
         ]
     )
     fig.update_traces(
         hovertemplate=""
-        "Time: %{x:.2f} ns<br>"
-        "Intensity: %{y:.0fs}<br>"
+        "Time: %{x:.3g} ns<br>"
+        "Intensity: %{y:.4g}<br>"
         "<extra></extra>"
     )
     fig.update_layout(
