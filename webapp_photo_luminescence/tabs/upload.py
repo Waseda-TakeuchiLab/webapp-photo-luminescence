@@ -37,14 +37,13 @@ files_dropdown = dcc.Dropdown(
     multi=True,
     clearable=False,
     id="uploaded-files-dropdown",
-    className="mt-3 w-100",
+    className="mt-3 w-100"
 )
 file_uploader = dcc.Upload(
     [
-        upload_button,
+        upload_button
     ],
-    multiple=True,
-    className=""
+    multiple=True
 )
 upload_dir_store = dcc.Store(
     "upload-dir-store",
@@ -113,7 +112,7 @@ def update_dropdown_options(
     dash.Output(files_dropdown, "value"),
     dash.Input(last_uploaded_store, "data"),
     dash.State(files_dropdown, "value"),
-    prevent_initial_call=True,
+    prevent_initial_call=True
 )
 def update_dropdown_value(
     filenames: list[str] | None,

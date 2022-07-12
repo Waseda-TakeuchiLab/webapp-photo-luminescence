@@ -51,7 +51,7 @@ def create_options_layout(
                 ],
             ),
         ],
-        className="mt-2",
+        className="mt-2"
     )
     return container
 
@@ -82,6 +82,6 @@ def create_layout(
                     dbc.Col(table)
                 ]
             )
-        ],
+        ]
     )
     return container

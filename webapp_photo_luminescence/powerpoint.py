@@ -55,7 +55,7 @@ def update_download_button_ability(selected_items: list[str] | None) -> bool:
     dash.State(h_figure_tab.graph, "figure"),
     dash.State(v_figure_tab.graph, "figure"),
     dash.State(datepicker, "date"),
-    prevent_initial_call=True,
+    prevent_initial_call=True
 )
 def download_powerpoint(
     n_clicks: int,
@@ -77,7 +77,7 @@ def download_powerpoint(
         raise dash.exceptions.PreventUpdate
     tr = h_figure_tab.load_time_resolved(
         filepath,
-        filter_type,
+        filter_type
     )
     wr = v_figure_tab.load_wavelength_resolved(
         filepath,

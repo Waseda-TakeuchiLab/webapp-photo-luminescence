@@ -32,5 +32,5 @@ layout = html.Div(
             ],
             style={"height": "30vh"}
         )
-    ],
+    ]
 )

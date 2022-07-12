@@ -19,7 +19,6 @@ from webapp_photo_luminescence.tabs import (
 )
 
 
-graph = common.create_graph(id="v-figure-graph")
 wavelength_slider = dcc.RangeSlider(
     id="v-wavelength-slider",
     min=0,
@@ -27,25 +26,23 @@ wavelength_slider = dcc.RangeSlider(
     value=(0, 800),
     step=1,
     marks=None,
-    tooltip={"placement": "bottom", "always_visible": True},
-    className="",
+    tooltip={"placement": "bottom", "always_visible": True}
 )
 fitting_curve_switch = dbc.Switch(
     id="v-fitting-curve-switch",
     label="Fitting",
     value=True,
-    className="mt-2",
+    className="mt-2"
 )
 log_intensity_switch = dbc.Switch(
     id="v-log-intensity-switch",
     label="Log Intensity",
-    value=True,
-    className="",
+    value=True
 )
 normalize_intensity_switch = dbc.Switch(
     id="v-normalize-intensity-switch",
     label="Normalize Intensity",
-    value=False,
+    value=False
 )
 download = dcc.Download(
     id="v-csv-download"
@@ -57,6 +54,7 @@ download_button = dbc.Button(
     ],
     id="v-csv-download-button"
 )
+graph = common.create_graph(id="v-figure-graph")
 options = common.create_options_layout(
     options_components=[
         dbc.Label("Wavelength Range"),
@@ -120,7 +118,7 @@ def update_graph(
     wavelength_range: list[int],
     fitting: bool,
     log_y: bool,
-    normalize_intensity: bool,
+    normalize_intensity: bool
 ) -> go.Figure:
     assert upload_dir is not None
     assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
@@ -143,7 +141,7 @@ def update_graph(
         y="intensity",
         color="name",
         color_discrete_sequence=px.colors.qualitative.Set1,
-        log_y=log_y,
+        log_y=log_y
     )
     fig.add_traces(
         [
@@ -174,7 +172,7 @@ def update_graph(
         )
     )
     fig.update_xaxes(
-        title_text="<b>Time (ns)</b>",
+        title_text="<b>Time (ns)</b>"
     )
     range_y = np.array(
         [
@@ -184,7 +182,7 @@ def update_graph(
     )
     fig.update_yaxes(
         title_text="<b>Intensity (arb. units)</b>",
-        range=(np.log10(range_y) if log_y else range_y) * [1.0, 1.05],
+        range=(np.log10(range_y) if log_y else range_y) * [1.0, 1.05]
     )
     return fig
 
@@ -230,11 +228,11 @@ def update_table(
     dash.Output(wavelength_slider, "max"),
     dash.Input(upload.files_dropdown, "value"),
     dash.State(upload.upload_dir_store, "data"),
-    prevent_initial_call=True,
+    prevent_initial_call=True
 )
 def update_wavelength_slider_range(
     selected_items: list[str] | None,
-    upload_dir: str | None,
+    upload_dir: str | None
 ) -> tuple[float, float]:
     assert upload_dir is not None
     assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
@@ -288,7 +286,7 @@ def download_csv(
     filter_type: str | None,
     wavelength_range: list[int],
     fitting: bool,
-    normalize_intensity: bool,
+    normalize_intensity: bool
 ) -> dict[str, t.Any]:
     assert upload_dir is not None
     assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
@@ -313,5 +311,5 @@ def download_csv(
         filename=filename,
         content=wr.df.to_csv(index=False),
         type="text/csv",
-        base64=False,
+        base64=False
     )

@@ -17,22 +17,20 @@ from webapp_photo_luminescence.tabs import (
 )
 
 
-graph = common.create_graph(id="h-figure-graph")
 peak_vline_switch = dbc.Switch(
     id="h-peak-vline-switch",
     label="Vertical Line at Peak",
-    value=False,
+    value=False
 )
 FWHM_range_switch = dbc.Switch(
     id="h-FWHM-range-switch",
     label="FWHM Range",
-    value=False,
-    className="",
+    value=False
 )
 normalize_intensity_switch = dbc.Switch(
     id="h-normalize-intensity-switch",
     label="Normalize Intensity",
-    value=False,
+    value=False
 )
 download = dcc.Download(
     id="h-csv-download"
@@ -44,6 +42,7 @@ download_button = dbc.Button(
     ],
     id="h-csv-download-button"
 )
+graph = common.create_graph(id="h-figure-graph")
 options = common.create_options_layout(
     options_components=[
         peak_vline_switch,
@@ -88,7 +87,7 @@ def update_graph(
     filter_type: str | None,
     show_peak_vline: bool,
     show_FWHM_range: bool,
-    normalize_intensity: bool,
+    normalize_intensity: bool
 ) -> go.Figure:
     assert upload_dir is not None
     assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
@@ -108,7 +107,7 @@ def update_graph(
         x="wavelength",
         y="intensity",
         color="name",
-        color_discrete_sequence=px.colors.qualitative.Set1,
+        color_discrete_sequence=px.colors.qualitative.Set1
     )
     if show_peak_vline:
         for tr in trs:
@@ -169,7 +168,7 @@ def update_table(
     selected_items: list[str] | None,
     upload_dir: str | None,
     filter_type: str | None,
-    normalize_intensity: bool,
+    normalize_intensity: bool
 ) -> list[dict[str, t.Any]] | None:
     assert upload_dir is not None
     assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
@@ -211,7 +210,7 @@ def download_csv(
     selected_items: list[str] | None,
     upload_dir: str | None,
     filter_type: str | None,
-    normalize_intensity: bool,
+    normalize_intensity: bool
 ) -> dict[str, t.Any]:
     assert upload_dir is not None
     assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
@@ -234,5 +233,5 @@ def download_csv(
         filename=filename,
         content=tr.df.to_csv(index=False),
         type="text/csv",
-        base64=False,
+        base64=False
     )
