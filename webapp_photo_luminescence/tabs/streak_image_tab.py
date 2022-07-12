@@ -20,9 +20,10 @@ img_download_button = dbc.Button(
         "Download Image",
         img_download
     ],
+    id="img-download-button",
     color="primary",
     className="mt-2",
-    id="img-download-button"
+    disabled=True
 )
 graph = common.create_graph(id="streak-image-graph")
 options = common.create_options_layout(

@@ -24,9 +24,10 @@ download_button = dbc.Button(
         "Download PowerPoint",
         download
     ],
+    id="pptx-download-button",
+    disabled=True,
     color="primary",
-    className="mt-2",
-    id="pptx-download-button"
+    className="mt-2"
 )
 datepicker = dcc.DatePickerSingle(
     id="experiment-date-picker-single",

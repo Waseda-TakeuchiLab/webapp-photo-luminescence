@@ -32,11 +32,11 @@ upload_button = dbc.Button(
     className="my-2"
 )
 files_dropdown = dcc.Dropdown(
+    id="uploaded-files-dropdown",
     options=[],
     value=None,
     multi=True,
     clearable=False,
-    id="uploaded-files-dropdown",
     className="mt-3 w-100"
 )
 file_uploader = dcc.Upload(
@@ -46,12 +46,12 @@ file_uploader = dcc.Upload(
     multiple=True
 )
 upload_dir_store = dcc.Store(
-    "upload-dir-store",
+    id="upload-dir-store",
     storage_type="session",
     data=""
 )
 last_uploaded_store = dcc.Store(
-    "last-upload-store",
+    id="last-upload-store",
     storage_type="memory",
     data=list()
 )
@@ -126,7 +126,7 @@ def update_dropdown_value(
         return current_value + filenames
 
 
-@functools.lru_cache(maxsize=8)
+@functools.lru_cache(maxsize=16)
 def load_pldata(
     filepath: str,
     filter_type: str | None = None

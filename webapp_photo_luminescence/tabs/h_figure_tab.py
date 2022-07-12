@@ -40,7 +40,8 @@ download_button = dbc.Button(
         "Download CSV",
         download
     ],
-    id="h-csv-download-button"
+    id="h-csv-download-button",
+    disabled=True
 )
 graph = common.create_graph(id="h-figure-graph")
 options = common.create_options_layout(
@@ -57,10 +58,10 @@ table = common.create_table(id="h-table")
 layout = common.create_layout(graph, options, table)
 
 
-@functools.lru_cache(maxsize=8)
+@functools.lru_cache(maxsize=16)
 def load_time_resolved(
     filepath: str,
-    filter_type: str | None,
+    filter_type: str | None = None,
     normalize_intensity: bool = False
 ) -> pl.TimeResolved[pl.Data]:
     data = upload.load_pldata(filepath, filter_type)

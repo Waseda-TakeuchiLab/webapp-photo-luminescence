@@ -71,12 +71,12 @@ table = common.create_table(id="v-table")
 layout = common.create_layout(graph, options, table)
 
 
-@functools.lru_cache(maxsize=8)
+@functools.lru_cache(maxsize=16)
 def load_wavelength_resolved(
     filepath: str,
-    filter_type: str | None,
-    wavelength_range: tuple[float, float],
-    fitting: bool,
+    filter_type: str | None = None,
+    wavelength_range: tuple[float, float] | None = None,
+    fitting: bool = False,
     normalize_intensity: bool = False,
 ) -> pl.WavelengthResolved[pl.Data]:
     data = upload.load_pldata(filepath, filter_type)
