@@ -36,6 +36,12 @@ fitting_curve_switch = dbc.Switch(
     value=True,
     className="mt-2",
 )
+log_intensity_switch = dbc.Switch(
+    id="v-log-intensity-switch",
+    label="Log Intensity",
+    value=True,
+    className="",
+)
 download = dcc.Download(
     id="v-csv-download"
 )
@@ -51,6 +57,7 @@ options = common.create_options_layout(
         dbc.Label("Wavelength Range"),
         wavelength_slider,
         fitting_curve_switch,
+        log_intensity_switch,
     ],
     download_components=[
         download_button
@@ -93,6 +100,7 @@ def load_wavelength_resolved(
     dash.Input(upload.filter_radio_items, "value"),
     dash.Input(wavelength_slider, "value"),
     dash.Input(fitting_curve_switch, "value"),
+    dash.Input(log_intensity_switch, "value"),
     prevent_initial_call=True
 )
 def update_graph(
@@ -101,6 +109,7 @@ def update_graph(
     filter_type: str | None,
     wavelength_range: list[int],
     fitting: bool,
+    log_y: bool,
 ) -> go.Figure:
     assert upload_dir is not None
     assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
@@ -122,6 +131,7 @@ def update_graph(
         y="intensity",
         color="name",
         color_discrete_sequence=px.colors.qualitative.Set1,
+        log_y=log_y,
     )
     fig.add_traces(
         [
@@ -154,15 +164,15 @@ def update_graph(
     fig.update_xaxes(
         title_text="<b>Time (ns)</b>",
     )
+    range_y = np.array(
+        [
+            df["intensity"][np.isclose(df["time"], 0.0)].min(),
+            df["intensity"].max()
+        ]
+    )
     fig.update_yaxes(
         title_text="<b>Intensity (arb. units)</b>",
-        range=np.log10(
-            [
-                df["intensity"][np.isclose(df["time"], 0.0)].min(),
-                df["intensity"].max()
-            ]
-        ) * [1.0, 1.05],
-        type="log"
+        range=(np.log10(range_y) if log_y else range_y) * [1.0, 1.05],
     )
     return fig
 
