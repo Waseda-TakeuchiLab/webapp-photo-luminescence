@@ -29,6 +29,11 @@ FWHM_range_switch = dbc.Switch(
     value=False,
     className="",
 )
+normalize_intensity_switch = dbc.Switch(
+    id="h-normalize-intensity-switch",
+    label="Normalize Intensity",
+    value=False,
+)
 download = dcc.Download(
     id="h-csv-download"
 )
@@ -42,7 +47,8 @@ download_button = dbc.Button(
 options = common.create_options_layout(
     options_components=[
         peak_vline_switch,
-        FWHM_range_switch
+        FWHM_range_switch,
+        normalize_intensity_switch
     ],
     download_components=[
         download_button
@@ -56,9 +62,12 @@ layout = common.create_layout(graph, options, table)
 def load_time_resolved(
     filepath: str,
     filter_type: str | None,
+    normalize_intensity: bool = False
 ) -> pl.TimeResolved[pl.Data]:
     data = upload.load_pldata(filepath, filter_type)
     tr = data.time_resolved()
+    if normalize_intensity:
+        tr.df["intensity"] /= tr.df["intensity"].max()
     tr.df["name"] = os.path.split(filepath)[-1]
     return tr
 
@@ -70,6 +79,7 @@ def load_time_resolved(
     dash.Input(upload.filter_radio_items, "value"),
     dash.Input(peak_vline_switch, "value"),
     dash.Input(FWHM_range_switch, "value"),
+    dash.Input(normalize_intensity_switch, "value"),
     prevent_initial_call=True
 )
 def update_graph(
@@ -78,6 +88,7 @@ def update_graph(
     filter_type: str | None,
     show_peak_vline: bool,
     show_FWHM_range: bool,
+    normalize_intensity: bool,
 ) -> go.Figure:
     assert upload_dir is not None
     assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
@@ -87,7 +98,8 @@ def update_graph(
     trs = [
         load_time_resolved(
             filepath,
-            filter_type
+            filter_type,
+            normalize_intensity
         ) for filepath in filepaths if os.path.exists(filepath)
     ]
     df = pd.concat([tr.df for tr in trs])
@@ -150,12 +162,14 @@ def update_graph(
     dash.Input(upload.files_dropdown, "value"),
     dash.State(upload.upload_dir_store, "data"),
     dash.Input(upload.filter_radio_items, "value"),
+    dash.Input(normalize_intensity_switch, "value"),
     prevent_initial_call=True
 )
 def update_table(
     selected_items: list[str] | None,
     upload_dir: str | None,
     filter_type: str | None,
+    normalize_intensity: bool,
 ) -> list[dict[str, t.Any]] | None:
     assert upload_dir is not None
     assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
@@ -165,7 +179,8 @@ def update_table(
     trs = [
         load_time_resolved(
             filepath,
-            filter_type
+            filter_type,
+            normalize_intensity
         ) for filepath in filepaths if os.path.exists(filepath)
     ]
     df = pd.concat([tr.df for tr in trs])
@@ -188,6 +203,7 @@ def update_download_button_ability(selected_items: list[str] | None) -> bool:
     dash.State(upload.files_dropdown, "value"),
     dash.State(upload.upload_dir_store, "data"),
     dash.State(upload.filter_radio_items, "value"),
+    dash.State(normalize_intensity_switch, "value"),
     prevent_initial_call=True
 )
 def download_csv(
@@ -195,6 +211,7 @@ def download_csv(
     selected_items: list[str] | None,
     upload_dir: str | None,
     filter_type: str | None,
+    normalize_intensity: bool,
 ) -> dict[str, t.Any]:
     assert upload_dir is not None
     assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
@@ -207,6 +224,7 @@ def download_csv(
     tr = load_time_resolved(
         filepath,
         filter_type,
+        normalize_intensity
     )
     filename = "h-" \
         + (filter_type+"-" if filter_type else "") \
