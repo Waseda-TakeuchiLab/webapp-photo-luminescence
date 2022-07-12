@@ -47,8 +47,7 @@ def update_streak_image(
     upload_dir: str | None,
     filter_type: str | None
 ) -> go.Figure:
-    assert upload_dir is not None
-    assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
+    upload_dir = upload.validate_upload_dir(upload_dir)
     if not selected_items:
         return go.Figure()
     filepaths = [os.path.join(upload_dir, item) for item in selected_items]
@@ -129,8 +128,7 @@ def update_download_content(
     upload_dir: str | None,
     filter_type: str | None
 ) -> dict[str, t.Any]:
-    assert upload_dir is not None
-    assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
+    upload_dir = upload.validate_upload_dir(upload_dir)
     if not selected_items:
         raise dash.exceptions.PreventUpdate
     item = selected_items[0]

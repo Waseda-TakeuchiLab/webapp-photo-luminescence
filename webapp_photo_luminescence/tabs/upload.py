@@ -57,6 +57,14 @@ last_uploaded_store = dcc.Store(
 )
 
 
+def validate_upload_dir(upload_dir: str | None) -> str:
+    if upload_dir is None:
+        raise ValueError("The upload directory must not be None.")
+    if not upload_dir.startswith(UPLOAD_BASEDIR):
+        raise ValueError("Invalid directory as a upload directory")
+    return upload_dir
+
+
 @dash.callback(
     dash.Output(upload_dir_store, "data"),
     dash.Input(upload_dir_store, "data")
@@ -82,8 +90,7 @@ def on_upload_files(
     filenames: list[str] | None,
     upload_dir: str | None
 ) -> list[str]:
-    assert upload_dir is not None
-    assert upload_dir.startswith(UPLOAD_BASEDIR)
+    upload_dir = validate_upload_dir(upload_dir)
     if contents is None or filenames is None:
         raise dash.exceptions.PreventUpdate
     for filename, content in zip(filenames, contents):
@@ -97,14 +104,13 @@ def on_upload_files(
     dash.Output(files_dropdown, "options"),
     dash.Input(last_uploaded_store, "data"),
     dash.State(upload_dir_store, "data"),
-    prevent_initial_call=True,
+    prevent_initial_call=True
 )
 def update_dropdown_options(
     last_uploaded_files: list[str] | None,
     upload_dir: str | None
 ) -> list[str]:
-    assert upload_dir is not None
-    assert upload_dir.startswith(UPLOAD_BASEDIR)
+    upload_dir = validate_upload_dir(upload_dir)
     return [path.name for path in pathlib.Path(upload_dir).iterdir() if path.is_file()]
 
 

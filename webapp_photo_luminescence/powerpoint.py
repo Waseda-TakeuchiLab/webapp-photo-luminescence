@@ -68,8 +68,7 @@ def download_powerpoint(
     v_fig: dict[str, t.Any] | None,
     experiment_date: str | None
 ) -> dict[str, t.Any]:
-    assert upload_dir is not None
-    assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
+    upload_dir = upload.validate_upload_dir(upload_dir)
     if not selected_items:
         raise dash.exceptions.PreventUpdate
     item = selected_items[0]
