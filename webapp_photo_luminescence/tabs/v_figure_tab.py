@@ -42,6 +42,11 @@ log_intensity_switch = dbc.Switch(
     value=True,
     className="",
 )
+normalize_intensity_switch = dbc.Switch(
+    id="v-normalize-intensity-switch",
+    label="Normalize Intensity",
+    value=False,
+)
 download = dcc.Download(
     id="v-csv-download"
 )
@@ -58,6 +63,7 @@ options = common.create_options_layout(
         wavelength_slider,
         fitting_curve_switch,
         log_intensity_switch,
+        normalize_intensity_switch
     ],
     download_components=[
         download_button
@@ -72,10 +78,13 @@ def load_wavelength_resolved(
     filepath: str,
     filter_type: str | None,
     wavelength_range: tuple[float, float],
-    fitting: bool
+    fitting: bool,
+    normalize_intensity: bool = False,
 ) -> pl.WavelengthResolved[pl.Data]:
     data = upload.load_pldata(filepath, filter_type)
     wr = data.wavelength_resolved(wavelength_range)
+    if normalize_intensity:
+        wr.df["intensity"] /= wr.df["intensity"].max()
     wr.df["fit"] = np.nan
     wr.df["name"] = os.path.split(filepath)[-1]
     if fitting:
@@ -101,6 +110,7 @@ def load_wavelength_resolved(
     dash.Input(wavelength_slider, "value"),
     dash.Input(fitting_curve_switch, "value"),
     dash.Input(log_intensity_switch, "value"),
+    dash.Input(normalize_intensity_switch, "value"),
     prevent_initial_call=True
 )
 def update_graph(
@@ -110,6 +120,7 @@ def update_graph(
     wavelength_range: list[int],
     fitting: bool,
     log_y: bool,
+    normalize_intensity: bool,
 ) -> go.Figure:
     assert upload_dir is not None
     assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
@@ -121,7 +132,8 @@ def update_graph(
             filepath,
             filter_type,
             tuple(wavelength_range[:2]),
-            fitting
+            fitting,
+            normalize_intensity
         ) for filepath in filepaths if os.path.exists(filepath)
     ]
     df = pd.concat([wr.df for wr in wrs])
@@ -184,6 +196,7 @@ def update_graph(
     dash.Input(upload.filter_radio_items, "value"),
     dash.Input(wavelength_slider, "value"),
     dash.Input(fitting_curve_switch, "value"),
+    dash.Input(normalize_intensity_switch, "value"),
     prevent_initial_call=True
 )
 def update_table(
@@ -192,6 +205,7 @@ def update_table(
     filter_type: str | None,
     wavelength_range: list[int],
     fitting: bool,
+    normalize_intensity: bool
 ) -> list[dict[str, t.Any]] | None:
     assert upload_dir is not None
     assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
@@ -203,7 +217,8 @@ def update_table(
             filepath,
             filter_type,
             tuple(wavelength_range[:2]),
-            fitting
+            fitting,
+            normalize_intensity
         ) for filepath in filepaths if os.path.exists(filepath)
     ]
     df = pd.concat([wr.df for wr in wrs])
@@ -263,6 +278,7 @@ def update_download_button_ability(selected_items: list[str] | None) -> bool:
     dash.State(upload.filter_radio_items, "value"),
     dash.State(wavelength_slider, "value"),
     dash.State(fitting_curve_switch, "value"),
+    dash.State(normalize_intensity_switch, "value"),
     prevent_initial_call=True
 )
 def download_csv(
@@ -272,6 +288,7 @@ def download_csv(
     filter_type: str | None,
     wavelength_range: list[int],
     fitting: bool,
+    normalize_intensity: bool,
 ) -> dict[str, t.Any]:
     assert upload_dir is not None
     assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
@@ -285,7 +302,8 @@ def download_csv(
         filepath,
         filter_type,
         tuple(wavelength_range[:2]),
-        fitting
+        fitting,
+        normalize_intensity
     )
     filename = f"v({wavelength_range[0]}-{wavelength_range[1]})-" \
         + (filter_type+"-" if filter_type else "") \
