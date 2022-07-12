@@ -31,7 +31,7 @@ wavelength_slider = dcc.RangeSlider(
     className="",
 )
 fitting_curve_switch = dbc.Switch(
-    id="fitting-curve-switch",
+    id="v-fitting-curve-switch",
     label="Fitting",
     value=True,
     className="mt-2",
