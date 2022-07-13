@@ -62,8 +62,8 @@ last_uploaded_store = dcc.Store(
     dash.Output(upload_dir_store, "data"),
     dash.Input(upload_dir_store, "data")
 )
-def update_upload_dir(_: dict[str, str] | None) -> str:
-    if upload_dir_store:
+def update_upload_dir(upload_dir: str | None) -> str:
+    if upload_dir:
         raise dash.exceptions.PreventUpdate
     if not os.path.exists(UPLOAD_BASEDIR):
         os.mkdir(UPLOAD_BASEDIR)
