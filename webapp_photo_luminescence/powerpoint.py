@@ -24,9 +24,10 @@ download_button = dbc.Button(
         "Download PowerPoint",
         download
     ],
+    id="pptx-download-button",
+    disabled=True,
     color="primary",
-    className="mt-2",
-    id="pptx-download-button"
+    className="mt-2"
 )
 datepicker = dcc.DatePickerSingle(
     id="experiment-date-picker-single",
@@ -55,7 +56,7 @@ def update_download_button_ability(selected_items: list[str] | None) -> bool:
     dash.State(h_figure_tab.graph, "figure"),
     dash.State(v_figure_tab.graph, "figure"),
     dash.State(datepicker, "date"),
-    prevent_initial_call=True,
+    prevent_initial_call=True
 )
 def download_powerpoint(
     n_clicks: int,
@@ -67,8 +68,7 @@ def download_powerpoint(
     v_fig: dict[str, t.Any] | None,
     experiment_date: str | None
 ) -> dict[str, t.Any]:
-    assert upload_dir is not None
-    assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
+    upload_dir = upload.validate_upload_dir(upload_dir)
     if not selected_items:
         raise dash.exceptions.PreventUpdate
     item = selected_items[0]
@@ -77,7 +77,7 @@ def download_powerpoint(
         raise dash.exceptions.PreventUpdate
     tr = h_figure_tab.load_time_resolved(
         filepath,
-        filter_type,
+        filter_type
     )
     wr = v_figure_tab.load_wavelength_resolved(
         filepath,

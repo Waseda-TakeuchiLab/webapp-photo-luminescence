@@ -32,30 +32,37 @@ upload_button = dbc.Button(
     className="my-2"
 )
 files_dropdown = dcc.Dropdown(
+    id="uploaded-files-dropdown",
     options=[],
     value=None,
     multi=True,
     clearable=False,
-    id="uploaded-files-dropdown",
-    className="mt-3 w-100",
+    className="mt-3 w-100"
 )
 file_uploader = dcc.Upload(
     [
-        upload_button,
+        upload_button
     ],
-    multiple=True,
-    className=""
+    multiple=True
 )
 upload_dir_store = dcc.Store(
-    "upload-dir-store",
+    id="upload-dir-store",
     storage_type="session",
     data=""
 )
 last_uploaded_store = dcc.Store(
-    "last-upload-store",
+    id="last-upload-store",
     storage_type="memory",
     data=list()
 )
+
+
+def validate_upload_dir(upload_dir: str | None) -> str:
+    if upload_dir is None:
+        raise ValueError("The upload directory must not be None.")
+    if not upload_dir.startswith(UPLOAD_BASEDIR):
+        raise ValueError("Invalid directory as a upload directory")
+    return upload_dir
 
 
 @dash.callback(
@@ -83,8 +90,7 @@ def on_upload_files(
     filenames: list[str] | None,
     upload_dir: str | None
 ) -> list[str]:
-    assert upload_dir is not None
-    assert upload_dir.startswith(UPLOAD_BASEDIR)
+    upload_dir = validate_upload_dir(upload_dir)
     if contents is None or filenames is None:
         raise dash.exceptions.PreventUpdate
     for filename, content in zip(filenames, contents):
@@ -98,14 +104,13 @@ def on_upload_files(
     dash.Output(files_dropdown, "options"),
     dash.Input(last_uploaded_store, "data"),
     dash.State(upload_dir_store, "data"),
-    prevent_initial_call=True,
+    prevent_initial_call=True
 )
 def update_dropdown_options(
     last_uploaded_files: list[str] | None,
     upload_dir: str | None
 ) -> list[str]:
-    assert upload_dir is not None
-    assert upload_dir.startswith(UPLOAD_BASEDIR)
+    upload_dir = validate_upload_dir(upload_dir)
     return [path.name for path in pathlib.Path(upload_dir).iterdir() if path.is_file()]
 
 
@@ -113,7 +118,7 @@ def update_dropdown_options(
     dash.Output(files_dropdown, "value"),
     dash.Input(last_uploaded_store, "data"),
     dash.State(files_dropdown, "value"),
-    prevent_initial_call=True,
+    prevent_initial_call=True
 )
 def update_dropdown_value(
     filenames: list[str] | None,
@@ -127,7 +132,7 @@ def update_dropdown_value(
         return current_value + filenames
 
 
-@functools.lru_cache(maxsize=8)
+@functools.lru_cache(maxsize=16)
 def load_pldata(
     filepath: str,
     filter_type: str | None = None

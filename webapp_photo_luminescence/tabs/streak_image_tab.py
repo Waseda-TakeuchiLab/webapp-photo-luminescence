@@ -14,17 +14,18 @@ from webapp_photo_luminescence.tabs import (
 )
 
 
-graph = common.create_graph(id="streak-image-graph")
 img_download = dcc.Download("img-download")
 img_download_button = dbc.Button(
     [
         "Download Image",
         img_download
     ],
+    id="img-download-button",
     color="primary",
     className="mt-2",
-    id="img-download-button"
+    disabled=True
 )
+graph = common.create_graph(id="streak-image-graph")
 options = common.create_options_layout(
     options_components=None,
     download_components=[
@@ -44,10 +45,9 @@ layout = common.create_layout(graph, options)
 def update_streak_image(
     selected_items: list[str] | None,
     upload_dir: str | None,
-    filter_type: str | None,
+    filter_type: str | None
 ) -> go.Figure:
-    assert upload_dir is not None
-    assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
+    upload_dir = upload.validate_upload_dir(upload_dir)
     if not selected_items:
         return go.Figure()
     filepaths = [os.path.join(upload_dir, item) for item in selected_items]
@@ -61,7 +61,7 @@ def update_streak_image(
                 z=data.streak_image,
                 x=data.wavelength,
                 y=data.time,
-                name=key,
+                name=key
             ) for key, data in item_to_data.items()
         ]
     )
@@ -85,12 +85,12 @@ def update_streak_image(
         contours_x=dict(
             show=True,
             usecolormap=True,
-            highlightcolor="cyan",
+            highlightcolor="cyan"
         ),
         contours_y=dict(
             show=True,
             usecolormap=True,
-            highlightcolor="cyan",
+            highlightcolor="cyan"
         ),
         contours_z=dict(
             show=True,
@@ -126,10 +126,9 @@ def update_download_content(
     n_clicks: int | None,
     selected_items: list[str] | None,
     upload_dir: str | None,
-    filter_type: str | None,
+    filter_type: str | None
 ) -> dict[str, t.Any]:
-    assert upload_dir is not None
-    assert upload_dir.startswith(upload.UPLOAD_BASEDIR)
+    upload_dir = upload.validate_upload_dir(upload_dir)
     if not selected_items:
         raise dash.exceptions.PreventUpdate
     item = selected_items[0]
@@ -141,5 +140,5 @@ def update_download_content(
         filename=(filter_type+"-" if filter_type else "") + item,
         content=base64.b64encode(data.to_raw_binary()).decode(),
         type="application/octet-stream",
-        base64=True,
+        base64=True
     )
